@@ -12,7 +12,7 @@ class RNNLayer(nn.Module):
     ):
         super().__init__()
         self.hidden_state_dim = hidden_state_dim
-        self.relu = F.relu
+        self.relu = nn.ReLU()
         self.batch_norm = nn.BatchNorm1d(input_size)
         self.rnn = nn.GRU(
             input_size=input_size,
@@ -28,9 +28,7 @@ class RNNLayer(nn.Module):
         inputs = self.relu(self.batch_norm(inputs.transpose(1, 2)))
         inputs = inputs.transpose(1, 2)
 
-        # print('GRU input shape:', inputs.shape)
         packed = nn.utils.rnn.pack_padded_sequence(inputs, input_lengths.cpu(), enforce_sorted=False, batch_first=True)
         outputs, hidden_states = self.rnn(packed)
         outputs, _ = nn.utils.rnn.pad_packed_sequence(outputs, batch_first=True)
-        # print('GRU output shape', outputs.shape)
         return outputs

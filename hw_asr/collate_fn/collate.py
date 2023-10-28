@@ -23,6 +23,7 @@ def collate_fn(dataset_items: List[dict]):
     text_encoded_length = zeros(len(dataset_items), dtype=int32)
     text = []
     audio_path = []
+    audio = []
     spectrogram_length = zeros(len(dataset_items), dtype=int32)
 
     for idx, item in enumerate(dataset_items):
@@ -36,6 +37,7 @@ def collate_fn(dataset_items: List[dict]):
         text.append(item_text)
         spectrogram_length[idx] = item_spec.shape[-1]
         audio_path.append(item['audio_path'])
+        audio.append(item['audio'])
 
     return {
         'spectrogram': spectrogram,
@@ -43,6 +45,7 @@ def collate_fn(dataset_items: List[dict]):
         'text_encoded_length': text_encoded_length,
         'text': text,
         'spectrogram_length': spectrogram_length,
-        'audio_path': audio_path
+        'audio_path': audio_path,
+        'audio': audio
     }
 

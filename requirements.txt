@@ -16,3 +16,7 @@ pyctcdecode
 torchaudio
 pillow
 notebook==6.5.6
+sentencepiece
+flashlight-text
+git+https://github.com/kpu/kenlm.git
+pyctcdecode

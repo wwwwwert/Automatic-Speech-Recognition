@@ -12,16 +12,15 @@ class Convolutions(nn.Module):
         ):
         super().__init__()
         self.input_dim = input_dim
-        self.activation = nn.ReLU()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.convs = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=(41, 11), stride=(2, 2), padding=(20, 5), bias=False),
             nn.BatchNorm2d(out_channels),
-            self.activation,
+            nn.ReLU(),
             nn.Conv2d(out_channels, out_channels, kernel_size=(21, 11), stride=(2, 1), padding=(10, 5), bias=False),
             nn.BatchNorm2d(out_channels),
-            self.activation,
+            nn.ReLU()
         )
 
     def forward(self, inputs: Tensor, input_lengths: Tensor) -> Tuple[Tensor, Tensor]:

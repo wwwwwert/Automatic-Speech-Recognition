@@ -11,8 +11,24 @@
     "log_spec": true
   },
   "augmentations": {
-    "wave": [],
-    "spectrogram": []
+    "wave": [
+      {
+        "type": "Gain",
+        "args": {}
+      }, 
+      {
+        "type": "BackgroundNoise",
+        "args": {"sample_rate": 16000}
+      }, 
+      {
+        "type": "RoomImpulse",
+        "args": {"sample_rate": 16000}
+      }
+    ],
+    "spectrogram": [{
+      "type": "SpecAug",
+      "args": {}
+    }]
   },
   "arch": {
     "type": "DeepSpeech2",
@@ -21,41 +37,7 @@
     }
   },
   "data": {
-    "train": {
-      "batch_size": 50,
-      "num_workers": 5,
-      "datasets": [
-        {
-          "type": "LibrispeechDataset",
-          "args": {
-            "part": "train-clean-100",
-            "max_audio_length": 20.0,
-            "max_text_length": 200
-          }
-        },
-        {
-          "type": "LibrispeechDataset",
-          "args": {
-            "part": "train-clean-360",
-            "max_audio_length": 20.0,
-            "max_text_length": 200
-          }
-        }
-      ]
-    },
-    "val": {
-      "batch_size": 50,
-      "num_workers": 5,
-      "datasets": [
-        {
-          "type": "LibrispeechDataset",
-          "args": {
-            "part": "dev-clean"
-          }
-        }
-      ]
-    },
-    "test-other": {
+    "test": {
       "batch_size": 50,
       "num_workers": 5,
       "datasets": [
@@ -63,18 +45,6 @@
           "type": "LibrispeechDataset",
           "args": {
             "part": "test-other"
-          }
-        }
-      ]
-    },
-    "test-clean": {
-      "batch_size": 50,
-      "num_workers": 5,
-      "datasets": [
-        {
-          "type": "LibrispeechDataset",
-          "args": {
-            "part": "test-clean"
           }
         }
       ]
@@ -92,15 +62,15 @@
   },
   "metrics": [
     {
-      "type": "ArgmaxWERMetric",
+      "type": "BeamSearchWERMetricLM",
       "args": {
-        "name": "WER (argmax)"
+        "name": "WER LM"
       }
     },
     {
-      "type": "ArgmaxCERMetric",
+      "type": "BeamSearchCERMetricLM",
       "args": {
-        "name": "CER (argmax)"
+        "name": "CER LM"
       }
     }
   ],

@@ -5,7 +5,6 @@ import torch.nn.init as init
 from typing import Tuple
 
 from hw_asr.model.deepspeech2.convolutions import Convolutions
-# from hw_asr.model.deepspeech2.modules import Linear, Lookahead, LayerNorm
 from hw_asr.model.deepspeech2.rnn import RNNLayer
 
 
@@ -14,13 +13,12 @@ class DeepSpeech2(nn.Module):
             self,
             n_feats: int,
             n_class: int,
-            num_rnn_layers: int=3,
+            num_rnn_layers: int=4,
             rnn_hidden_dim: int=512,
             bidirectional: bool=True,
             **batch
         ):
         super().__init__()
-        # print('n_feats:', n_feats)
         self.conv = Convolutions(n_feats)
         self.rnn_layers = nn.ModuleList()
 
@@ -41,7 +39,6 @@ class DeepSpeech2(nn.Module):
 
         self.fc = nn.Sequential(
             layer_norm,
-            # Lookahead(rnn_output_size),
             linear,
         )
 
@@ -51,20 +48,15 @@ class DeepSpeech2(nn.Module):
             spectrogram_length: Tensor,
             **batch
         ) -> Tuple[Tensor, Tensor]:
-        # print('Input shape:', spectrogram.shape)
         outputs, output_lengths = self.conv(spectrogram, spectrogram_length)
-        # outputs = outputs.transpose(1, 2).contiguous()
-        # print('After convs shape:', outputs.shape)
 
         for rnn_layer in self.rnn_layers:
             outputs = rnn_layer(outputs, output_lengths)
 
         outputs = self.fc(outputs)
-        # print('Linear output shape:', outputs.shape)
         return outputs
     
     def transform_input_lengths(self, input_lengths):
         lengths = self.conv.get_time_reduce(input_lengths)
-        # print('Lengths shape:', lengths.shape)
         return lengths
     

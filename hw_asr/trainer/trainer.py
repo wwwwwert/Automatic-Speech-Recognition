@@ -50,8 +50,7 @@ class Trainer(BaseTrainer):
             self.len_epoch = len_epoch
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items() if k != "train"}
         self.lr_scheduler = lr_scheduler
-        self.log_step = 50
-        self.accum_iter = 4
+        self.log_step = 100
 
         self.train_metrics = MetricTracker(
             "loss", "grad norm", *[m.name for m in self.metrics], writer=self.writer
@@ -59,6 +58,8 @@ class Trainer(BaseTrainer):
         self.evaluation_metrics = MetricTracker(
             "loss", *[m.name for m in self.metrics], writer=self.writer
         )
+
+        self.sample_rate = config["preprocessing"]["sr"]
 
     @staticmethod
     def move_batch_to_device(batch, device: torch.device):
@@ -127,6 +128,7 @@ class Trainer(BaseTrainer):
                 break
         torch.cuda.empty_cache()
         log = last_train_metrics
+        self._log_augs(batch['audio'][:10])
 
         for part, dataloader in self.evaluation_dataloaders.items():
             val_log = self._evaluation_epoch(epoch, part, dataloader)
@@ -148,14 +150,13 @@ class Trainer(BaseTrainer):
         batch["log_probs_length"] = self.model.transform_input_lengths(
             batch["spectrogram_length"]
         )
-        batch["loss"] = self.criterion(**batch) #/ self.accum_iter
+        batch["loss"] = self.criterion(**batch) 
         if is_train:
             batch["loss"].backward()
-            if True or ((batch_idx + 1) % self.accum_iter == 0) or (batch_idx + 1 == self.len_epoch):
-                self._clip_grad_norm()
-                self.optimizer.step()
-                if self.lr_scheduler is not None:
-                    self.lr_scheduler.step()
+            self._clip_grad_norm()
+            self.optimizer.step()
+            if self.lr_scheduler is not None:
+                self.lr_scheduler.step()
 
         metrics.update("loss", batch["loss"].item())
         for met in self.metrics:
@@ -215,16 +216,20 @@ class Trainer(BaseTrainer):
         # TODO: implement logging of beam search results
         if self.writer is None:
             return
-        # log_probs.shape = [50, 1279, 28]
         argmax_inds = log_probs.cpu().argmax(-1).numpy()
-        # argmax_inds.shape = [50, 1279]
         argmax_inds = [
             inds[: int(ind_len)]
             for inds, ind_len in zip(argmax_inds, log_probs_length.numpy())
         ]
-        argmax_texts_raw = [self.text_encoder.decode(inds) for inds in argmax_inds]
-        argmax_texts = [self.text_encoder.ctc_decode(inds) for inds in argmax_inds]
-        tuples = list(zip(argmax_texts, text, argmax_texts_raw, audio_path))
+        texts_raw = [self.text_encoder.decode(inds) for inds in argmax_inds]
+        texts = [self.text_encoder.ctc_decode(inds) for inds in argmax_inds]
+
+        # works too long
+        # hypotheses = self.text_encoder.ctc_lm_beam_search(log_probs.cpu())
+        # texts = hypotheses
+        # texts_raw = hypotheses
+
+        tuples = list(zip(texts, text, texts_raw, audio_path))
         shuffle(tuples)
         rows = {}
         for pred, target, raw_pred, audio_path in tuples[:examples_to_log]:
@@ -265,3 +270,7 @@ class Trainer(BaseTrainer):
             return
         for metric_name in metric_tracker.keys():
             self.writer.add_scalar(f"{metric_name}", metric_tracker.avg(metric_name))
+
+    def _log_augs(self, audios):
+        for i, audio in enumerate(audios):
+            self.writer.add_audio(f'audio_example{i}', audio, self.sample_rate)
