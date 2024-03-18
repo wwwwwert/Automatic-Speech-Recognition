@@ -1,7 +1,6 @@
 # ASR project 
 
 ## Project description
-This is HW1 in the course Deep Learning for Sound Processing.
 
 In this project DeepSpeech2 ([paper](https://proceedings.mlr.press/v48/amodei16.pdf)) model was implemented for ASR task.
 
